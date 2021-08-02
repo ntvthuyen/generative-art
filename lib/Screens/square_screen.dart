@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:udp/udp.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -6,6 +7,7 @@ import 'package:thesis/Animation/destroy_animation.dart';
 import 'package:thesis/Particle/square_particle.dart';
 import 'package:thesis/painter.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'dart:async';
 
 class SquareScreen extends StatefulWidget {
   @override
@@ -20,6 +22,8 @@ class SquareScreenState extends State<SquareScreen>
   static int MINRADIUS = 20;
   final _random = new Random(DateTime.now().microsecondsSinceEpoch);
 
+  late int current_action = -1;
+  static StreamController<int> streamController = new StreamController<int>();
   final int pallete = 0;
   late Animation<double> animation;
   late AnimationController controller;
@@ -27,18 +31,32 @@ class SquareScreenState extends State<SquareScreen>
   /*Future<int> playLocalAsset(String name) async {
     return await audioPlayer.play(name, isLocal: true);
   }*/
-  Stream<int> _bids = (() async* {
-    Random _random = new Random(DateTime.now().microsecondsSinceEpoch);
+  //Stream<int>
+  Stream<void> _bids = (() async* {
+    String str = "-1";
+    var receiver = await UDP.bind(Endpoint.loopback(port: Port(65000)));
     while (true) {
-      await Future<void>.delayed(const Duration(seconds: 2));
-      var a = _random.nextInt(10);
-      yield a;
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      yield -1;
-      await Future<void>.delayed(const Duration(seconds: 2));
+      await receiver.listen((datagram) {
+        str = String.fromCharCodes(datagram.data);
+        streamController.add(int.parse(str));
+      }, timeout: Duration(seconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      //yield int.parse(str);
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      str = '-1';
+      //yield int.parse(str);
     }
   })();
+
+  void t() async {
+    var receiver = await UDP.bind(Endpoint.loopback(port: Port(65000)));
+    await receiver.listen((datagram) async {
+      String str = String.fromCharCodes(datagram.data);
+      streamController.add(int.parse(str));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      streamController.add(-1);
+    });
+  }
 
   @override
   void initState() {
@@ -59,6 +77,7 @@ class SquareScreenState extends State<SquareScreen>
         }
       });
     controller.forward();
+    t();
   }
   /*
     $light-pink: rgba(255, 173, 173, 1);
@@ -221,10 +240,11 @@ class SquareScreenState extends State<SquareScreen>
         ),
         backgroundColor: Colors.blueGrey[100],
         body: StreamBuilder<int>(
-            stream: _bids,
+            stream: streamController.stream, // _bids,
             builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
-              if (snapshot.hasData && snapshot.data! != -1) {
-                print(snapshot.data!);
+              if (snapshot.hasData && current_action == snapshot.data!) {
+              } else if (snapshot.hasData && snapshot.data! != -1) {
+                current_action = snapshot.data!;
                 if (snapshot.data! == 9) {
                   dparticles.clear();
                   if (particles.length <= 50) {
@@ -253,6 +273,18 @@ class SquareScreenState extends State<SquareScreen>
                     element.direction = snapshot.data!;
                     element.speed = 3;
                   });
+                else if (snapshot.data! == 8) {
+                  particles.forEach((element) {
+                    for (int i = 0; i <= 26; ++i)
+                      dparticles.add(DestroyParticle(element.dx, element.dy,
+                              element.color, element.radius)
+                          .buildWidget());
+                  });
+                  particles.clear();
+                }
+              }
+              if (snapshot.hasData) {
+                current_action = snapshot.data!;
               }
               return CustomPaint(
                 size: Size.infinite,
@@ -268,3 +300,5 @@ class SquareScreenState extends State<SquareScreen>
     super.dispose();
   }
 }
+
+class yield {}
