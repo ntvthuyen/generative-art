@@ -49,12 +49,11 @@ class SquareScreenState extends State<SquareScreen>
   })();
 
   void t() async {
+    streamController.add(-1);
     var receiver = await UDP.bind(Endpoint.loopback(port: Port(65000)));
     await receiver.listen((datagram) async {
       String str = String.fromCharCodes(datagram.data);
       streamController.add(int.parse(str));
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      streamController.add(-1);
     });
   }
 
@@ -242,9 +241,8 @@ class SquareScreenState extends State<SquareScreen>
         body: StreamBuilder<int>(
             stream: streamController.stream, // _bids,
             builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
-              if (snapshot.hasData && current_action == snapshot.data!) {
-              } else if (snapshot.hasData && snapshot.data! != -1) {
-                current_action = snapshot.data!;
+              if (snapshot.hasData && snapshot.data! != -1) {
+                streamController.add(-1);
                 if (snapshot.data! == 9) {
                   dparticles.clear();
                   if (particles.length <= 50) {
@@ -283,9 +281,7 @@ class SquareScreenState extends State<SquareScreen>
                   particles.clear();
                 }
               }
-              if (snapshot.hasData) {
-                current_action = snapshot.data!;
-              }
+
               return CustomPaint(
                 size: Size.infinite,
                 painter: MyPainterCanvas(particles, true, 1, animation.value),
