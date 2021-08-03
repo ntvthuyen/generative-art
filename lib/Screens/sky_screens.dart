@@ -27,7 +27,6 @@ class SquareScreenState extends State<SquareScreen>
   final int pallete = 0;
   late Animation<double> animation;
   late AnimationController controller;
-
   void t() async {
     streamController.add(-1);
     var receiver = await UDP.bind(Endpoint.loopback(port: Port(65000)));
@@ -58,30 +57,22 @@ class SquareScreenState extends State<SquareScreen>
     controller.forward();
     t();
   }
-  /*
-    $light-pink: rgba(255, 173, 173, 1);
-    $deep-champagne: rgba(255, 214, 165, 1);
-    $lemon-yellow-crayola: rgba(253, 255, 182, 1);
-    $tea-green: rgba(202, 255, 191, 1);
-    $celeste: rgba(155, 246, 255, 1);
-    $baby-blue-eyes: rgba(160, 196, 255, 1);
-    $maximum-blue-purple: rgba(189, 178, 255, 1);
-    $mauve: rgba(255, 198, 255, 1);
-    $baby-powder: rgba(255, 255, 252, 1);
-   */
 
-  /*
-    $red-salsa: rgba(249, 65, 68, 1);
-    $orange-red: rgba(243, 114, 44, 1);
-    $yellow-orange-color-wheel: rgba(248, 150, 30, 1);
-    $mango-tango: rgba(249, 132, 74, 1);
-    $maize-crayola: rgba(249, 199, 79, 1);
-    $pistachio: rgba(144, 190, 109, 1);
-    $zomp: rgba(67, 170, 139, 1);
-    $cadet-blue: rgba(77, 144, 142, 1);
-    $queen-blue: rgba(87, 117, 144, 1);
-    $cg-blue: rgba(39, 125, 161, 1);
-  */
+  void paintSky(Canvas canvas, Rect rect) {
+    const RadialGradient gradient = RadialGradient(
+      center: Alignment(0.7, -0.6), // near the top right
+      radius: 0.2,
+      colors: <Color>[
+        Color(0xFFFFFF00), // yellow sun
+        Color(0xFF0099FF), // blue sky
+      ],
+      stops: <double>[0.4, 1.0],
+    );
+    // rect is the area we are painting over
+    final Paint paint = Paint()..shader = gradient.createShader(rect);
+    canvas.drawRect(rect, paint);
+  }
+
   List<List<Color>> colors = [
     [
       Color.fromRGBO(255, 173, 173, 1),
